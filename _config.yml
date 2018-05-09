@@ -110,11 +110,11 @@ disqus:
 ## Gitalk
 # please refer to https://github.com/gitalk/gitalk for more info.
 gitalk:
-  clientID: # GitHub Application Client ID
-  clientSecret: # GitHub Application Client Secret
-  repository: # GitHub repo
-  owner: # GitHub repo owner
-  admin: # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
+  clientID: 998da062a2766cf9bc14 # GitHub Application Client ID
+  clientSecret: 4d6c72f197007e6bf004739f42fc4ea0d19d5f8e # GitHub Application Client Secret
+  repository: https://github.com/chadcoco1444/hclab_page # GitHub repo
+  owner: chadcoco1444 # GitHub repo owner
+  admin: chadcoco1444 # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
     # - your GitHub Id
 
 
