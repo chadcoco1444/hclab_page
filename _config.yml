@@ -35,7 +35,7 @@ timezone: # see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for
 author:
   name: chadcoco1444
   email: chadcoco1444@gmail.com # your Email address e.g. someone@site.com
-  facebook: # your Facebook username
+  facebook: chadcoco1444 # your Facebook username
   twitter: # your Twitter username
   github: chadcoco1444
   linkedin: # your Linkedin username
@@ -105,7 +105,7 @@ sources: # bootcdn (default), unpkg
 ##############################
 ## Disqus
 disqus:
-  shortname: 
+  shortname:
 # the Disqus shortname for the site
 
 ## Gitalk
