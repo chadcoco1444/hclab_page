@@ -36,6 +36,7 @@
     "gulp": "^3.9.1",
     "gulp-rename": "^1.2.2",
     "gulp-svg2png": "^2.0.2",
-    "gulp-to-ico": "^1.0.0"
+    "gulp-to-ico": "^1.0.0",
+    "svg2png": "^3.0.1"
   }
 }
