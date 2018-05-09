@@ -1,0 +1,1761 @@
+<!DOCTYPE html><html lang="zh-Hant">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Computer Organization Structure - High Performance Computing Laboratory</title>
+<meta name="description" content="計算機組織結構  參考資料：http://www.ece.lsu.edu/ee4720/第01講 Course Outline (6/25)Q: 為什麼電腦不用十進位而用二進位？A: signal 的 voltage 只能分成 high 和 low =&gt; 只能有兩種state電子電路：  switch(n-...">
+<link rel="canonical" href="http://localhost:4000/2018/05/09/Computer-Organization-Structure.html"><link rel="alternate" type="application/rss+xml" title="High Performance Computing Laboratory" href="http://localhost:4000/feed.xml">
+<!-- for Safari on iOS https://developer.apple.com/ios/human-interface-guidelines/icons-and-images/app-icon/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo/icon-180x180.png"><link rel="apple-touch-icon" sizes="167x167" href="/assets/images/logo/icon-167x167.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/images/logo/icon-152x152.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/images/logo/icon-120x120.png"><link rel="shortcut icon" href="/assets/images/logo/icon-120x120.png">
+<!-- for Chrome on Android https://developer.chrome.com/multidevice/android/installtohomescreen -->
+<meta name="mobile-web-app-capable" content="yes"><link rel="icon" sizes="192x192" href="/assets/images/logo/icon-192x192.png">
+<!-- for Edge on Windows 10 https://msdn.microsoft.com/en-us/library/dn255024(v=vs.85).aspx --><meta name="msapplication-TileImage" content="/assets/images/logo/icon-144x144.png"><meta name="msapplication-square310x310logo" content="/assets/images/logo/icon-310x310.png"><meta name="msapplication-wide310x150logo" content="/assets/images/logo/icon-310x150.png"><meta name="msapplication-square150x150logo" content="/assets/images/logo/icon-150x150.png"><meta name="msapplication-square70x70logo" content="/assets/images/logo/icon-70x70.png">
+<meta name="msapplication-TileColor" content="#eeeeee">
+<link rel="stylesheet" href="/assets/css/blog.css">
+    <script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.decodeUrl = function(str) {
+    return str ? decodeURIComponent(str.replace(/\+/g, '%20')) : '';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i, cb; loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cb = cbs[i]; cb();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();</script>
+  </head>
+  <body>
+    <div class="m-page-stage js-page-stage">
+      <div class="m-page-content"><header class="m-page-header">
+  <div class="main clearfix">
+    <div class='site-logo'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="24px" height="24px" viewBox="0 0 24 24">
+<style type="text/css">
+	.st0{fill:#666666;}
+</style>
+<path class="st0" d="M1.7,22.3c5.7-5.7,11.3-5.7,17,0c3.3-3.3,3.5-5.3,0.8-6c2.7,0.7,3.5-1.1,2.3-5.6s-3.3-5.2-6.3-2.1
+	c3-3,2.3-5.2-2.1-6.3S7,1.8,7.7,4.6C7,1.8,5,2.1,1.7,5.3C7.3,11,7.3,16.7,1.7,22.3"/>
+</svg><a title="HCLab
+" href="/">High Performance Computing Laboratory</a></div>
+    <nav>
+      <ul><li><a href="/">Home</a></li><li><a href="/all.html">Post</a></li><li><a href="/about.html">Member</a></li><li><a type="application/rss+xml" href="/feed.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="m-page-main"><div class="m-post">
+	<div class="main clearfix js-main">
+		<div class="col-2 js-col-2">
+			<aside class="js-article-aside"><div class="m-toc js-toc"></div></aside>
+		</div>
+		<div class="col-1">
+			<article class="js-article" itemscope itemtype="http://schema.org/BlogPosting">
+				<meta itemprop="mainEntityOfPage" itemscope itemType="https://schema.org/WebPage"/>
+				<header class="main-header"><h1 itemprop="headline" itemprop="name headline">Computer Organization Structure</h1><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="chadcoco1444"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Computer">Computer</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=Organization">Organization</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=Structure">Structure</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><time class="article-meta" datetime="2018-05-09T00:00:00+08:00"
+          itemprop="datePublished">May 09, 2018
+        </time></div>
+  </div>
+</div>
+</header>
+				<div class="m-article-content js-article-content" itemprop="articleBody"><h1 id="計算機組織結構">計算機組織結構</h1>
+
+<ul>
+  <li>參考資料：http://www.ece.lsu.edu/ee4720/</li>
+</ul>
+
+<h2 id="第01講-course-outline-625">第01講 Course Outline (6/25)</h2>
+<p>Q: 為什麼電腦不用十進位而用二進位？
+A: signal 的 voltage 只能分成 high 和 low =&gt; 只能有兩種state</p>
+
+<h3 id="電子電路">電子電路：</h3>
+<ul>
+  <li>switch(n-type transistor):
+    <ul>
+      <li>three terminals: the source, the gate, and the drain.</li>
+      <li>開：
+        <ol>
+          <li>在 gate加電壓 =&gt; 產生 eletron channel 在 source 和 drain 之間</li>
+          <li>在 source 和 drain 之間加電位差 =&gt; 產生電流</li>
+        </ol>
+      </li>
+      <li>關：移除 gate 的電壓
+<!--more-->
+        <h3 id="數位電子學">數位電子學</h3>
+      </li>
+    </ul>
+  </li>
+  <li>有了開關就可以做邏輯閘，ex: NAND gate，NAND gate 是 function complete ，任何一個 boolean function 都可以用 NAND gate 表示出來</li>
+  <li>有了邏輯閘就可以做邏輯電路，也可以做記憶元件</li>
+</ul>
+
+<h3 id="computer-architecture">Computer Architecture</h3>
+<p>Q: What is Computer Architecture?
+A: Computer Architecture = Instruction Set Architecture + Computer Organization</p>
+<ul>
+  <li>Instruction Set 是一個 software 和 hardware 之間的 interface，software 不需要知道 hardware 怎麼實做，只需要知道有怎麼樣的 instruction，就可以根據 instruction 去發展 software；hardware 也不需要知道最後會執行哪些程式，只需要知道最後會有這些 instruction</li>
+  <li>Instruction Set 其實就是指 Assembly Language</li>
+</ul>
+
+<h2 id="第02講-computers-history-626">第02講 Computer’s history (6/26)</h2>
+<ul>
+  <li>feature size: 目前的技術可以做到的 source 到 drain 的最短距離</li>
+  <li>Moore’s low: 每18個月，一個 chip 上的 transistor 數目可以 double</li>
+</ul>
+
+<h2 id="第0304講-computer-abstractions-and-technology-626">第03.04講 Computer Abstractions and Technology (6/26)</h2>
+<h3 id="performance">Performance</h3>
+<ul>
+  <li>Response Time: how long it takes to do a task</li>
+  <li>Throughput: total work done per unit time</li>
+  <li>Elapsed time: total response time, include all aspects =&gt; Determine system performance</li>
+  <li>
+    <p>CPU time: Time spent processing a given job</p>
+  </li>
+  <li>
+    <p>$performance = \frac{1}{Execution\ Time}$</p>
+  </li>
+  <li>
+    <p>X is n time faster than Y
+$n = \frac{Performance_X}{Performance_Y} = \frac{Execution\ time_Y}{Execution\ time_X}$</p>
+  </li>
+  <li>Clock period: duration of a clock cycle</li>
+  <li>
+    <p>Clock frequency(clock rate): cycles per second</p>
+  </li>
+  <li>
+    <p>$\begin{equation}
+ CPU\ time = CPU\ Clock\ Cycles \times Clock\ Cycle\ Time<br />
+ = \frac{CPU\ Clock\ Cycles}{Clock\ Rate}
+ \end{equation}$</p>
+  </li>
+  <li>
+    <p>如果用更高階的觀點來看，則會考慮一個程式需要幾個 instruction 來完成
+ $Clock\ Cycles = Instruction\ Count \times Cycles\ per\ Instruction(CPI)$
+ $CPU\ Time = Instruction\ Count \times CPI \times Clock\ Cycle\ Time = \frac{Instruction\ Count \times CPI}{Clock\ Rate}$</p>
+  </li>
+  <li>
+    <p>不同的 instruction 會有不同的 clock cycle
+$Clock\ Cycles = \displaystyle\sum_{i = 1}^{n}(CPI_i \times Instruction\ Count_i)$</p>
+  </li>
+  <li>
+    <p>Weighted average CPI
+$CPI = \frac{\displaystyle\sum_{i = 1}^{n}(CPI_i \times Instruction\ Count_i)}{Instruction\ Count}$</p>
+  </li>
+  <li>MIPS(Millions of Instruction Per Second)
+$MIPS = \frac{Instruction\ Count}{Execution\ time \times 10^6} = \cfrac{Instruction\ Count}{\frac{Instruction\ Count \times CPI}{Clock\ Rate} \times 10 ^6} = \frac{Clock\ Rate}{CPI \times 10^6}$
+    <ul>
+      <li>MIPS並不能代表真正的 performance，因為不同機器一個 instruction 花的時間未必相同</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="performance-summary">Performance Summary</h4>
+<p>$CPU\ Time = \frac{Seconds}{Program} = \frac{Instructions}{Program} \times \frac{Clock\ Cycles}{Instruction} \times \frac{Seconds}{Clock\ Cycle}$</p>
+
+<ul>
+  <li>Amdahl’s Law
+$T_{improved} = \frac{T_{affected}}{improvement\ factor} + T_{unaffected}$
+    <ul>
+      <li>告訴我們要 Make the common task fast</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="power-consumption">Power Consumption</h3>
+<ul>
+  <li>Static Power Consumption: leakage power (漏電)</li>
+  <li>Dynamic Power Consumption: 從 0 變 1，1 變 0 所需的電
+$Dynamic\ Power\ Consumption = Capacitive\ load \times Voltage^2 \times Frequency$
+    <ul>
+      <li>利用 voltage 降低的方式來讓 power 降低，但是因為 voltage 降低，leakage power 會變多，所以不能無止盡的降下去，如果在單位面積裡面再做更多的運算（電晶體變更多）的話，power density 會提高，產生的熱也會變多，所以 power 的問題成為發展這個 technology 的限制 =&gt; 不再 focus 在 unicore 的 performance，往 multicore 的方向發展</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="第0509講-instruction-set-architecture-627">第05～09講 Instruction set architecture (6/27)</h2>
+<h3 id="mips-register-convention">MIPS Register Convention:</h3>
+<p>|Name|Resister Number|Usuage|
+|:—-:|:—-:|:—-|
+|$zero|0|constant 0|
+|$at|1|reserved for assembler|
+|$v0-$v1|2-3|expression evaluation &amp; function results|
+|$a0-$a3|4-7|arguments|
+|$t0-$t7|8-15|temporary: caller saves|
+|$s0-$s7|16-23|callee saves|
+|$t8-$t9|24-25|temporary|
+|$k0-$k1|26-27|reserved for OS kernel|
+|$gp|28|pointer to global area|
+|$sp|29|stack pointer|
+|$fp|30|frame pointer|
+|$ra|31|return address|</p>
+
+<h3 id="r-type-instruction">R Type Instruction</h3>
+<p>|op|rs|rt|rd|shamt|funct
+|:—-:|:—-:|:—-|-|-|-|
+|6 bits|5 bits|5 bits|5 bits|5 bits|6 bits|</p>
+<ul>
+  <li>opcode: 0 for all R type instruction</li>
+  <li>rs (source register): generally used to specify register containing first operand</li>
+  <li>rt (target register): generally used to specify register containing second operand</li>
+  <li>rd (destination register): generally used to specify register which will receive result of computation</li>
+  <li>shamt: shift amount</li>
+  <li>funct: conbined with opcode to specify the instruction
+Q: 為什麼不直接把 opcode 的長度增加就好？
+A: 因為如果把 opcode 的長度增加，i type 和 j type opcode 的長度也要增加，那 i type 的 immediate 的長度和 j type 的 target address 的長度就會減少</li>
+</ul>
+
+<ol>
+  <li>add, sub, and, or, slt(set on less than)
+    <ul>
+      <li>usuage: operator rd, rs, rt</li>
+      <li>ex: add $s0, $s1, $s2</li>
+      <li>slt: if (rs &lt; rt) rd = 1; else rd = 0;</li>
+    </ul>
+  </li>
+  <li>sll(shift left logical), srl, sra(shift right arithmatic)
+    <ul>
+      <li>usuage: operator rd, rt, shamt</li>
+      <li>ex: srl $s0, $s1, 4</li>
+      <li>rs is unused</li>
+      <li>sra: shift right with signed extention</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="i-type-instruction">I Type Instruction</h3>
+<p>|op|rs|rt|immediate|
+|:—-:|:—-:|:—-|-|
+|6 bits|5 bits|5 bits|16 bits|</p>
+<ul>
+  <li>opcode: uniquely specifies an I type instruction</li>
+  <li>rs: specifies the only register operand</li>
+  <li>rt: specifies register which will receive result of computation</li>
+</ul>
+
+<ol>
+  <li>addi, andi, slti
+    <ul>
+      <li>usuage: operator rt, rs, constant
+ constant: 16 bits 2’s complement stored in immediate</li>
+      <li>ex: addi $s0, $s1, -50</li>
+    </ul>
+  </li>
+  <li>lw, sw, lb, lbu, sb, lh, sh, lhu
+    <ul>
+      <li>usuage: operator rt, offset(rs)
+ offset: stored in immediate，以 byte 為單位</li>
+      <li>ex: sw $s0, 12($s1)</li>
+      <li>lb: load a byte, sign extend to 32 bits</li>
+      <li>lbu: load a byte, zero extend to 32 bits</li>
+      <li>sb/sh: store just rightmost byte/halfword</li>
+    </ul>
+  </li>
+  <li>beq, bne (conditiional branch)
+    <ul>
+      <li>usuage: operator rt, rs, label</li>
+      <li>ex: bne $s0, $s1, Exit</li>
+      <li>視 immediate 為一個 16 bits 的 2’s complement integer，用 PC-relative addressing，因為有 alignment 而且一個 instruction 都是一個 word（4 bytes） 的長度，所以 instruction 的 address 的最後兩個 bit 一定是 0，就直接省略(即使用 word address)，所以可以跳到相對於 program counter $\pm2^{17}$ bytes 的地方</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="j-type-instruction">J Type Instruction</h3>
+<p>|op|target address|
+|:—-:|:—-:|
+|6 bits|26 bits|</p>
+<ul>
+  <li>addressing:
+  |PC[31…28]|target address(26 bits)|00|
+  |—-|—-|—-|
+  |31~28|27~2|1~0|
+  省略最後兩個 bit，缺的四個 bit 再用 program counter 的前四個 bit 來補在 28 bits 的前面，就產生 32 bits 的 address 了</li>
+  <li>usuage: j label</li>
+</ul>
+
+<h3 id="if-statement">If Statement</h3>
+<p>c code:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>if (i == j) f = g + h;
+else f = g - h;
+</code></pre>
+</div>
+<p>f, g, …, j: $s1, $s2, …. $s4</p>
+
+<p>MIPS code:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>	bne $s3, $s4, Else
+	add $s1, $s2, $s3
+	j Exit
+Else:	sub $s1, $s2, $s3
+Exit:
+</code></pre>
+</div>
+<h3 id="loop-statement">Loop statement</h3>
+<p>c code:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>while (save[i] &gt; k) i += 1;
+</code></pre>
+</div>
+<p>i in $s3, k in $s5, address of save in $s6</p>
+
+<p>MIPS code:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>Loop:	sll $t1, $s3, 2
+	add $t1, $t1, $s6
+	lw $t0, 0($t1)
+	slt $t2, $t0, $s5
+	beq $t2, $zero, Exit
+	addi $s3, $s3, 1
+	j Loop
+Exit: ...
+</code></pre>
+</div>
+
+<h3 id="procedure-call">Procedure Call</h3>
+<ul>
+  <li>caller: function making a call</li>
+  <li>callee: function being called</li>
+</ul>
+
+<p>in caller:</p>
+
+<ol>
+  <li>push $a0 -$a3 to stack(nested call)</li>
+  <li>put arguments in $a0 - $a3</li>
+  <li>push $t0 - $t7 to stack if needed</li>
+  <li>push $ra to stack if needed(nested call)</li>
+  <li>jal Label
+    <ul>
+      <li>jal: jump and link</li>
+      <li>return address in $ra</li>
+      <li>jump to target address(i.e.: Label)</li>
+    </ul>
+  </li>
+</ol>
+
+<p>in callee:</p>
+
+<ol>
+  <li>push $s0 - $s7 to stack before use them</li>
+  <li>perform procedure’s operations</li>
+  <li>place return value in $v0, $v1</li>
+  <li>restore $s0 - $s7</li>
+  <li>jr $ra
+    <ul>
+      <li>jump register</li>
+    </ul>
+  </li>
+</ol>
+
+<p>in caller:</p>
+
+<ol>
+  <li>restore from stack after the call</li>
+</ol>
+
+<h3 id="32-bit-constant">32-bit Constant</h3>
+<div class="highlighter-rouge"><pre class="highlight"><code>lui $s0, 61
+ori $s0, $s0, 2304
+</code></pre>
+</div>
+<ul>
+  <li>lui: load upper immediate</li>
+</ul>
+
+<h2 id="第1014講-computer-arithmetic-71">第10～14講 Computer Arithmetic (7/1)</h2>
+<h3 id="alu">ALU</h3>
+<p><img src="https://i.imgur.com/oLq67o3.png" alt="" />
+|ALUop|Function|
+|—-|—-|
+|0000|and|
+|0001|or|
+|0010|add|
+|0110|subtract|
+|0111|set on less than|
+|1100|nor|</p>
+
+<ul>
+  <li>ALUop: 左邊的兩個 bit 分別代表 a 和 b 要不要 invert，右邊兩個 bit 代表 1 個 4-1 的 mux 的 control signal，00 是 and，01 是 or， 10 是 add，11 在第 0 bit 為 set，在 1~31 bit 為 0</li>
+  <li>set on less than 的作法是將 1~31 bit 都設為 0，將第 0 bit 設為 a - b 的 sign bit（因為 a &lt; b 即 a - b &lt; 0，sign bit 會是 1，所以就直接將這個 1 拿去做為要 set 的那個 1）</li>
+  <li>nor: (a nor b) 等於 (a’ and b’)</li>
+</ul>
+
+<h3 id="mips-mulplication">MIPS Mulplication</h3>
+<ul>
+  <li>ususge:
+    <ol>
+      <li>mult rs, rt
+mfhi rd
+mflo rd
+        <ul>
+          <li>no destination register，相乘最多有 64 bit，用兩個特殊的 register (hi, lo) 儲存</li>
+          <li>mfhi: move from high</li>
+          <li>mflo: move from low 存在指定的 register</li>
+        </ul>
+      </li>
+      <li>mul rs, rt, rd
+        <ul>
+          <li>store least-significant 32 bits of product in rd</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h3 id="mips-division">MIPS Division</h3>
+<ul>
+  <li>usuage:
+div rs, rt
+mfri rd
+mflo rd
+    <ul>
+      <li>quotient stored in lo, remainder stored in hi</li>
+    </ul>
+  </li>
+  <li>devide algorithm
+<img src="https://i.imgur.com/BzcDA9q.png" alt="" />
+    <ul>
+      <li>問題: 為什麼在步驟一要先左移一個 bit？</li>
+    </ul>
+  </li>
+  <li>divide hardware
+<img src="https://i.imgur.com/WimvYTZ.png" alt="" />
+    <ul>
+      <li>問題： 如果商太大（超過 32 bit 那該怎麼辦？）</li>
+    </ul>
+  </li>
+  <li>signed divide: 先當作 unsign 來做，被除數和餘數應該要同號，如果被除數和除數不同號，要把商加上負號
+    <ul>
+      <li>問題： 如果是 7 / (-2) 要怎麼利用這個原則？</li>
+    </ul>
+  </li>
+  <li>multiply/devide hardware
+<img src="https://i.imgur.com/FQ9dQnU.png" alt="" /></li>
+</ul>
+
+<h3 id="floating-point">Floating Point</h3>
+<h4 id="ieee-754-standard">IEEE 754 standard</h4>
+<p>|sign|exponent|significand|
+|—|—|—|</p>
+<ol>
+  <li>sign bit: 0 為正，1 為負
+significand: 因為大家都是 1.xxxxxxxx，所以 leading 1 就不儲存了，這樣可以存更多個 bit
+    <ul>
+      <li>single precision 的有效位數是 23 + 1，double precision 的有效位數是 52 + 1</li>
+    </ul>
+  </li>
+  <li>這樣的排列方式在比大小的時候較方便</li>
+  <li>exponent 和 range 有關，significand 和精度有關</li>
+  <li>exponent 是用 biased notation 來儲存
+    <ul>
+      <li>biased notation (excess notation): 以 biased 7 為例，讓 0000 為最小數，1111 是最大數（為了方便比大小），把二進位當作unsign number 然後再減 7，就可以得到正確的 biased notation（減 7 的意思代表留了 7 個位置來表示負數）</li>
+    </ul>
+  </li>
+</ol>
+
+<h5 id="single-precision-32-bit">single precision (32 bit):</h5>
+<p>|1 bit|8 bits|23 bits|
+|—|—|—|</p>
+<ul>
+  <li>
+    <p>normalized number = $(-1)^{sign} \times 1.significand \times 2^{exponent - 127}$</p>
+  </li>
+  <li>
+    <p>special value:
+  |Exponent|Significand|Object|
+  |——–|———–|——|
+  |0|0|+/- 0|
+  |0|nonzero|denormalized underflow|
+  |1-254|anything|normalized floating number|
+  |255|0|+/- infinity|
+  |255|nonzero|NaN|</p>
+    <ul>
+      <li>normalized number 可以表示的範圍為 $-1.0 \times 2^{-126}$ 到 $(2 - 2^{-23}) \times 2^{127}$，小於$-1.0 \times 2^{-126}$ 為 underflow，大於$(2 - 2^{-23}) \times 2^{127}$ 為 overflow</li>
+      <li>有 +0 和 -0，在一些 limit comparison 時會有用</li>
+      <li>denormalized underflow: allow a number to degrate in significance until it becomes 0 (gradual underflow)
+        <ul>
+          <li>denormalized number = $0.significand \times 2^{-126}$</li>
+          <li>最小的 normalized number 為 $1.0000000000000000 0000000 \times 2^{-126}$</li>
+          <li>最小的 denormalized number 為 $0.000000000000 00000000001 \times 2^{-126}$</li>
+        </ul>
+      </li>
+      <li>NaN (not a number):
+        <ul>
+          <li>用於 debug</li>
+          <li>op(NaN,X) = NaN</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h5 id="double-precision-64-bit">double precision (64 bit):</h5>
+<p>|1 bit|11 bits|52 bits|
+|—|—|—|</p>
+
+<h4 id="floating-point-addition">Floating-Point Addition</h4>
+<ul>
+  <li>algorithm:
+    <ol>
+      <li>align binary point: right shift the smaller number</li>
+      <li>add mantissa</li>
+      <li>normalization and check overflow/underflow during shift</li>
+      <li>round the mantissa and renormalize if necessary</li>
+    </ol>
+  </li>
+  <li>hardware:
+<img src="https://i.imgur.com/qEom5zn.png" alt="" /></li>
+</ul>
+
+<h4 id="floating-point-multiplication">Floating-Point Multiplication</h4>
+<ul>
+  <li>algorithm:
+    <ol>
+      <li>add exponents of operands to get exponent of product
+        <ul>
+          <li>need extra subtraction step of the bias amount （因為把 exponent 加在一起時重複加了 excess 的部份）</li>
+        </ul>
+      </li>
+      <li>multiplication of mantissa</li>
+      <li>normalize the product and check overflow/underflow during shift</li>
+      <li>round the mantissa and renormalize if necessary</li>
+      <li>set the sign of product</li>
+    </ol>
+  </li>
+</ul>
+
+<h4 id="mips-floating-point">MIPS Floating Point</h4>
+<ul>
+  <li>seperate floating point instructions:
+    <ul>
+      <li>single precision: add.s, sub.s, mul.s, div.s</li>
+      <li>double precision: add.d, sub.d, mul.d, div.d</li>
+    </ul>
+  </li>
+  <li>FPU:
+    <ul>
+      <li>contain 32 32-bit registers: $f0 - $f31</li>
+      <li>double precision: register 兩兩一組</li>
+      <li>seperate load and store: lwc1 (load a word from coprocessor 1) and swc1
+        <ul>
+          <li>MIPS has 4 sets of coprocessor registers.
+            <ul>
+              <li>Co-processor 0: Processor and system control.</li>
+              <li>Co-processor 1: MIPS-32 floating-point</li>
+              <li>Co-processor 2: Reserved for special-purpose designs.</li>
+              <li>Co-processor 3: MIPS-64 floating-point</li>
+            </ul>
+          </li>
+          <li>The integer (GPR) registers are NOT one of the four sets.</li>
+          <li>Each set has 32 registers.</li>
+        </ul>
+      </li>
+      <li>instruction to move data between main processor and coprocessors: mfc0 (move from coprocessor 0), mtc0 (move to coprocessor 0)</li>
+    </ul>
+  </li>
+  <li>參考資料: http://www.ece.lsu.edu/ee4720/2014/lfp.s.html</li>
+</ul>
+
+<h2 id="第1517講-single-cycle-processor-73">第15～17講 Single-Cycle Processor (7/3)</h2>
+<h3 id="storage-element">Storage Element</h3>
+<ol>
+  <li>Register File
+ <img src="https://i.imgur.com/7CkBnaK.png" alt="" />
+    <ul>
+      <li>consists of 32 registers</li>
+      <li>two 32-bit output buses: busA and busB
+ one 32-bit input bus: busW</li>
+      <li>RA selects the register to put on busA
+ RB selects the register to put on busB
+ RW selects the register to be written via busW when Write Enable is 1</li>
+    </ul>
+  </li>
+  <li>Memory
+ <img src="https://i.imgur.com/vHC1ktH.png" alt="" />
+    <ul>
+      <li>one input bus: Data In
+ one output bus: Data Out</li>
+      <li>address selects the word to put on Data Out
+ Write Enable: address selects the memory word to be written via the Data In bus</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="datapath">Datapath</h3>
+<h4 id="a-single-cycle-datapath">A Single Cycle Datapath</h4>
+<p><img src="https://i.imgur.com/Wr9VMTi.png" alt="" /></p>
+
+<h4 id="datapath-with-control-unit">Datapath with Control Unit</h4>
+<p><img src="https://i.imgur.com/dtd7k2o.png" alt="" /></p>
+
+<h4 id="datapath-with-control-and-jump-instruction">Datapath with Control and Jump Instruction</h4>
+<p><img src="https://i.imgur.com/vC0VX5y.png" alt="" /></p>
+
+<h3 id="control-unit">Control Unit</h3>
+<p><img src="https://i.imgur.com/QeWYwZU.png" alt="" /></p>
+
+<h4 id="alu-control">ALU Control</h4>
+<p>|ALUop|Function|
+|—-|—-|
+|0000|and|
+|0001|or|
+|0010|add|
+|0110|subtract|
+|0111|set on less than|
+|1100|nor|
+<img src="https://i.imgur.com/MnWXc8O.png" alt="" />
+註：</p>
+<ol>
+  <li>lw, sw 要加immediate，beq 則是要把 rs, rt 相減</li>
+  <li>add: 00, sub: 01, unknown: 10</li>
+</ol>
+
+<ul>
+  <li>真值表:
+  <img src="https://i.imgur.com/h5YQFxe.jpg" alt="" /></li>
+  <li>得到 logic equation:
+    <ul>
+      <li>ALUctr2 = ALUop0 + ALUop1‧func2’‧func1‧func0’
+  <img src="https://i.imgur.com/Z14qHdd.png" alt="" /></li>
+      <li>ALUctr1 = ALUop1’ + ALUop1‧func2’‧func0’
+  <img src="https://i.imgur.com/iixcwpD.png" alt="" /></li>
+      <li>ALUctr0 = ALUop1‧func3’‧func2‧func1’‧func0 + ALUop1’‧func3‧func2’‧func1‧func0’
+  <img src="https://i.imgur.com/jFKyGXB.png" alt="" />
+  提問： 為什麼 func3, func2, func1, func0 不是 don’t care?</li>
+    </ul>
+  </li>
+  <li>電路圖:
+  <img src="https://i.imgur.com/YbwS745.png" alt="" /></li>
+</ul>
+
+<h4 id="main-control">Main Control</h4>
+<ul>
+  <li>真值表:
+  <img src="https://i.imgur.com/fBPnFnm.png" alt="" /></li>
+  <li>得到 logic equation</li>
+  <li>電路圖:
+  <img src="https://i.imgur.com/0L7x3A0.png" alt="" /></li>
+</ul>
+
+<h3 id="how-to-design-a-processor">How to Design a Processor</h3>
+<ol>
+  <li>analyze instruction set (datapath requirements)
+    <ul>
+      <li>the meaning of each instruction is given by the register transfers</li>
+      <li>datapath must include storage element</li>
+      <li>datapath must support each register transfer</li>
+    </ul>
+  </li>
+  <li>select set of datapath components and establish clocking methodology</li>
+  <li>assemble datapath meeting the requirements</li>
+  <li>analyze implementation of each instruction to determine setting of control points effecting register transfer</li>
+  <li>assemble the control logic</li>
+</ol>
+
+<h2 id="第1821講-pipelining-75">第18～21講 Pipelining (7/5)</h2>
+<h3 id="pipeline">Pipeline</h3>
+<ul>
+  <li>不會改善 latency，而是改善 throughput</li>
+  <li>會被最慢的 stage 所限制 （所以希望每個 stage 長度平均一點）</li>
+  <li>
+    <p>不同的 task 在同一時間使用不同的資源</p>
+  </li>
+  <li>
+    <p>Split Single-cycle Datapath into 5 Steps: IF(instruction fetch), ID(instruction decode and register file read), EX(execution or address calculation), MEM(data memory access), WB(write back)
+<img src="https://i.imgur.com/9wP075m.png" alt="" /></p>
+  </li>
+  <li>
+    <p>加上 Pipeline Register:
+<img src="https://i.imgur.com/RoaTIqL.png" alt="" /></p>
+  </li>
+  <li>已經得到但還沒用到的資源也要繼續傳下去
+    <ul>
+      <li>例子：write register 要繼續傳下去，否則當第五個 state 結束要 write back 時會寫到新 decode 的 write register 位置
+  <img src="https://i.imgur.com/VWlh7o4.png" alt="" /></li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="control-signal">Control signal</h4>
+<ul>
+  <li>control signal 跟 single cycle datapath 時並無不同，只是用 control signal 的時間不一樣</li>
+  <li>所以就根據使用的時間將 control signal 分類，用到的就可以不要了，沒用到的要繼續傳下去
+<img src="https://i.imgur.com/s9bYQ24.png" alt="" /></li>
+</ul>
+
+<h3 id="pipeline-hazard">Pipeline Hazard</h3>
+<h4 id="structure-hazard">Structure Hazard:</h4>
+<ul>
+  <li>不同的 instruction 同時想要去用同一個資源</li>
+  <li>解決方法：每個 intruction 要在相同的 stage 用特定的 resource
+    <ul>
+      <li>例子：add 在第四個 stage 就已經算完可以準備 write back 了，但因為要避免 structure hazard，需要在第五個 stage 才能 write back</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="data-hazard">Data Hazard</h4>
+<h5 id="data-hazard-and-forwarding-r-type-and-r-type">Data Hazard and Forwarding (R-Type and R-Type)</h5>
+<ul>
+  <li>three types: (instruction i1 followed by instruction i2)
+    <ol>
+      <li>RAW(read after write): i2 tries to read operand before i1 write it
+ <img src="https://i.imgur.com/yIhGril.png" alt="" />
+        <ul>
+          <li>在 cycle 5 sub 才將資料寫回 register，但是 and, or 卻在之前就想要去 register 拿資料 （add 則要看 register file 有沒有 internal forwarding，如果有那就可以拿到正確的資料）
+            <ul>
+              <li>internal forwarding: write in first half clock and read in second half</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>WAR(write after read): i2 tries to write aperand before i1 read it
+        <ul>
+          <li>i1 gets wrong operand</li>
+          <li>MIPS 不會發生，因為 i1 先執行而且 read 都是在 cycle 2</li>
+        </ul>
+      </li>
+      <li>WAW(write after write): i2 tries to write operand before i1 write it
+        <ul>
+          <li>leaves wrong result (i1’s instead of i2’s); occur only in pipelines that write in more than one stage</li>
+          <li>MIPS 不會發生，因為 i2 晚 i1 一個 cycle，且 write back 都在 cycle 5</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li>解決方法：
+    <ol>
+      <li>
+        <p>insert the NOPs =&gt; slow us down
+ <img src="https://i.imgur.com/YQmSr6p.png" alt="" /></p>
+      </li>
+      <li>
+        <p>forwarding
+ <img src="https://i.imgur.com/Ew0fwBE.png" alt="" /></p>
+        <ul>
+          <li>要思考 datapath 要怎麼設計（什麼時候要 forwarding），以及 control signal 要怎麼設定</li>
+          <li>datapath with forwarding
+  <img src="https://i.imgur.com/UBkysXh.png" alt="" /></li>
+          <li>hazard conditions:
+            <ol>
+              <li>EX/MEM.RegisterRd = ID/EX.registerRs</li>
+              <li>EX/MEM.RegisterRd = ID/EX.registerRt</li>
+              <li>MEM/WB.RegisterRd = ID/EX.registerRs</li>
+              <li>MEM/WB.RegisterRd = ID/EX.registerRt</li>
+            </ol>
+          </li>
+          <li>Q: 這樣條件就滿足了嗎？
+ A: 沒有， don’t forward if instruction does not write register =&gt; check if RegWrite is asserted (如果不是 write 就根本不用 forward)</li>
+          <li>optimization:
+            <ul>
+              <li>don’t forward if destination register is $0 =&gt; check if registerRd = 0</li>
+            </ul>
+          </li>
+          <li>hazard conditions using control signals:
+            <ul>
+              <li>if both WB and MEM forward, let MEM forward
+                <ul>
+                  <li>例子：
+                    <div class="highlighter-rouge"><pre class="highlight"><code>  add $1, $1, $2
+  add $1, $1, $3
+  add $1, $1, $4
+</code></pre>
+                    </div>
+                    <p>=&gt; 讓第二個 add 的 $1 forward</p>
+                  </li>
+                </ul>
+              </li>
+              <li>MEM hazard:
+                <ul>
+                  <li>if (EX/MEM.RegWrite and (EX/MEM.RegRd $\not=0$) and (EX/MEM.RegRd = ID/EX.RegRs))
+  ForwardA = 10</li>
+                  <li>if (EX/MEM.RegWrite and (EX/MEM.RegRd $\not=0$) and (EX/MEM.RegRd = ID/EX.RegRt))
+  ForwardB = 10</li>
+                </ul>
+              </li>
+              <li>WB hazard:
+                <ul>
+                  <li>if (MEM/WB.RegWrite and (MEM/WB.RegRd $\not=0$) and (EX/MEM.RegRd $\not=$ ID/EX.Reg.Rs) and (MEM/WB.RegRd = ID/EX.RegRs))
+  ForwardA = 01</li>
+                  <li>(MEM/WB.RegWrite and (MEM/WB.RegRd $\not=0$) and (EX/MEM.RegRd $\not=$ ID/EX.Reg.Rt) and (MEM/WB.RegRd = ID/EX.RegRt))
+  ForwardB = 01</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<h5 id="data-hazard-and-stalling-load-and-r-type">Data Hazard and Stalling (Load and R-Type)</h5>
+<ul>
+  <li>如果是 lw instruction 資料要在 cycle 4 結束才能拿到，它的下一個 instruction 卻在 cycle 3 開始就需要資料運算，就算 forwarding 還是來不及
+  <img src="https://i.imgur.com/j92ZwWs.png" alt="" /></li>
+  <li>解決方法：
+    <ul>
+      <li>插入一個 NOP (stall)
+        <ul>
+          <li>把 IF/ID 設為 0</li>
+          <li>把 PC 的 WriteEnable 設為 0</li>
+        </ul>
+      </li>
+      <li>if (ID/EX.MemRead and ((ID/EX.RegisterRt = IF/ID.Register.Rs) or (ID/EX.RegisterRt = IF/ID.Register.Rt)))
+  =&gt; stall the pipeline for one cycle</li>
+      <li>datapath with stall unit
+  <img src="https://i.imgur.com/Gzaetrz.png" alt="" /></li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="control-hazard-branch-hazard">Control Hazard (Branch Hazard)</h4>
+<ul>
+  <li>在 cycle 4 才知道要不要 branch，可是如果要 branch 前面已經先讀了三個錯誤的 instruction 進來了</li>
+  <li>解決方法：
+    <ol>
+      <li>都先當作沒有要 branch，等真的要 branch 再把之前讀錯的 flush 掉 =&gt; 每次 predict 錯都要 flush 三個 instruction，太浪費了，所以把判斷 branch 的部份拿到 cycle 2 先做
+        <ul>
+          <li>flush: 把 IF/ID 設為 0 或把 control signal 設為 0
+        * pipeline with flush
+ <img src="https://i.imgur.com/NEIUa9u.png" alt="" /></li>
+        </ul>
+      </li>
+      <li>dynamic branch prediction: 用 branch prediction buffer 來 紀錄上一次是 taken（跳） 還是 not taken（沒跳）
+        <ul>
+          <li>在 instruction fetch 的時候做</li>
+          <li>1-bit predictor: 只要一次錯就改 table
+            <ul>
+              <li>在雙層迴圈時外部迴圈每執行一次內部迴圈都會 predict 錯兩次
+ =&gt; 改良成 2-bit predictor，即兩次 predict 錯才改 table
+  <img src="https://i.imgur.com/GRg8vpb.png" alt="" /></li>
+            </ul>
+          </li>
+          <li>even with predictor, still need to calculate target address =&gt; 1-cycle penalty for a taken branch
+            <ul>
+              <li>branch target buffer
+                <ul>
+                  <li>cache of target address</li>
+                  <li>indexed by PC when instruction fetched
+                    <ul>
+                      <li>if hit and instruction is branch predicted taken, can fetch target immediate</li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>delayed branch: 因為只需要一個 cycle，所以就 predict not taken，然後去找找看有沒有 instruction 是無論 taken 或 not taken 都需要執行的，改成執行那個 instruction，如果找不到就執行 NOP</li>
+    </ol>
+  </li>
+</ul>
+
+<h4 id="exception">Exception</h4>
+<ul>
+  <li>非預期會發生的事件，MIPS 裡將其分為兩種：
+    <ol>
+      <li>exception: 在 CPU 內部發生的
+        <ul>
+          <li>例如：undefined opcode, overflow, syscall</li>
+        </ul>
+      </li>
+      <li>interrupt: 從外部的 I/O 產生的</li>
+    </ol>
+  </li>
+  <li>handling exception:
+    <ol>
+      <li>save PC of offending instruction
+        <ul>
+          <li>in MIPS: Exception Program Counter (EPC)</li>
+        </ul>
+      </li>
+      <li>save indication of the problem
+        <ul>
+          <li>in MIPS: Cause register: 1 bit, 0 for undefined opcode, 1 for overflow</li>
+        </ul>
+      </li>
+      <li>jump to the handler
+        <ul>
+          <li>single entry: 跳到某個特定點，再根據 Cause register 看要哪個 handler 處理
+            <ul>
+              <li>MIPS 用 single entry</li>
+            </ul>
+          </li>
+          <li>vectored interrupt: handler addres determined by the Cause register
+        * handler action:</li>
+          <li>if restartable
+            <ol>
+              <li>take corrective action</li>
+              <li>use EPC to return to program</li>
+            </ol>
+          </li>
+          <li>otherwise
+            <ol>
+              <li>terminate program</li>
+              <li>report error using EPC, cause</li>
+            </ol>
+          </li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+  <li>Another form of control hazard
+    <ul>
+      <li>similar to mispredicted branch</li>
+      <li>在出現 exception 的那個 instruction 之前的 instruction 應該要執行完，之後的 instruction 應該要 flush 掉</li>
+    </ul>
+  </li>
+  <li>pipeline with exception
+  <img src="https://i.imgur.com/jo3ZG2C.png" alt="" /></li>
+</ul>
+
+<h3 id="instruction-level-parallelism-ilp">Instruction-Level Parallelism (ILP)</h3>
+<ol>
+  <li>deeper pipeline</li>
+  <li>multiple issue: multiple pipelines
+    <ul>
+      <li>Instruction Per Cycle (IPC): 因為 CPI &lt; 1，所以改用 IPC</li>
+      <li>speculation: guess what to do with an instruction (要猜才能盡量的讓 pipeline 滿)
+        <ul>
+          <li>start an operation as soon as possible
+  	* check whether guess was right
+            <ul>
+              <li>if so, complete the operation</li>
+              <li>if not, roll-back and do the right thing</li>
+            </ul>
+          </li>
+          <li>例子：
+            <ul>
+              <li>speculate on branch outcome
+                <ul>
+                  <li>roll back if path taken is different</li>
+                </ul>
+              </li>
+              <li>speculate on load (move load before store)
+  			* 因為不太可能先 store 之後又馬上 load 某個資料，所以就把 load 先做，因為 load 比較花時間，如果真的發生了再 roll back</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>分成 static multiple issue 和 dynamic multiple issue
+        <ul>
+          <li>static multiple issue</li>
+        </ul>
+      </li>
+      <li>compiler groups instructions into “issue packets”
+        <ul>
+          <li>group of instructions that can be issued on a single cycle</li>
+        </ul>
+      </li>
+      <li>scheduling static multiple issue
+        <ul>
+          <li>compiler must remove some/all hazards
+            <ul>
+              <li>reorder instructions into issue packets</li>
+              <li>no dependencies with a packet</li>
+              <li>possibly some dependencies between packets</li>
+              <li>pad with NOP if necessary</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>MIPS with static dual issue
+        <ul>
+          <li>two-issue packets
+            <ul>
+              <li>one ALU/branch, one load/store instruction</li>
+              <li>64-bit aligned
+                <ul>
+                  <li>ALU/branch, then load/store</li>
+                  <li>pad on unused instruction with nop</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>rigister 變成 4 個 read port 兩個 write port，多一個 ALU
+  <img src="https://i.imgur.com/xoL4eg9.png" alt="" /></li>
+          <li>loop unrolling:
+            <ul>
+              <li>replicate loop body to expose more parallelism
+  <img src="https://i.imgur.com/gc39ME8.png" alt="" />
+  IPC = 5/4 = 1.25
+  <img src="https://i.imgur.com/r5Jj1Va.png" alt="" />
+  IPC = 14/8 = 1.75</li>
+              <li>use different registers per replication
+                <ul>
+                  <li>called “register renaming”</li>
+                </ul>
+              </li>
+              <li>dynamic multiple issue</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>allow the CPU to execute instructions out of order to avoid stalls but commit result to registers in order
+  <img src="https://i.imgur.com/FRB0Taa.png" alt="" /></li>
+      <li>例子：
+        <div class="highlighter-rouge"><pre class="highlight"><code>  lw $t0, 20($s2)
+  addu $t1, $t0, $t2
+  sub $s4, $s4, $t3
+  slti $t5, $s4, 20
+</code></pre>
+        </div>
+        <p>can start sub while addu is waiting for lw</p>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="第2226講-memory-78">第22～26講 Memory (7/8)</h2>
+<h3 id="memory-technology">Memory Technology</h3>
+<ul>
+  <li>random access: access time same for all locations
+    <ul>
+      <li>SRAM:
+        <ul>
+          <li>low density, high power, fast</li>
+          <li>static: content will last forever until lost power</li>
+          <li>use for cache</li>
+        </ul>
+      </li>
+      <li>DRAM:
+        <ul>
+          <li>high density, low power, slow</li>
+          <li>dynamic: need to be fresh regularly</li>
+          <li>use for main mamory</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>magnetic disk</li>
+</ul>
+
+<h3 id="memory-hierarchy">Memory Hierarchy</h3>
+<p><img src="https://i.imgur.com/6sau7Zj.png" alt="" /></p>
+
+<ul>
+  <li>at any given time, data is copied between onlt two adjacent levels
+    <ul>
+      <li>upper level: the one closer to the processor</li>
+      <li>lower level: the one away from the processor</li>
+    </ul>
+  </li>
+  <li>
+    <p>block: the basic unit of information transfer</p>
+  </li>
+  <li>two different types of locality:
+    <ul>
+      <li>temporal locality (locality in time)
+        <ul>
+          <li>ex: loop</li>
+        </ul>
+      </li>
+      <li>spatial locality (locality in space)
+        <ul>
+          <li>ex: array, program</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>using the principle of locality:
+    <ul>
+      <li>program access a relatively small portion of the address space at any instant of time</li>
+      <li>90/10 rule: 10% of code execute 90% of time</li>
+    </ul>
+  </li>
+  <li>terminology
+    <ul>
+      <li>hit: data appears in upper level
+        <ul>
+          <li>hit rate: fraction of memory access found in the upper level</li>
+          <li>hit time: 判斷記憶體是否hit + 把上層資料搬到處理器的時間</li>
+        </ul>
+      </li>
+      <li>miss: data needs to be retrived from a block in the lower level
+        <ul>
+          <li>miss rate: 1 - (hit rate)</li>
+          <li>miss penalty: time to replace a block in the upper level + time to deliver the block to the processor</li>
+        </ul>
+      </li>
+      <li>hit time « miss penalty</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="cache">Cache</h3>
+<ul>
+  <li>參考資料：http://enginechang.logdown.com/tags/cache
+    <h4 id="direct-mapped-cache">direct-mapped cache</h4>
+  </li>
+  <li>block placement:
+    <ul>
+      <li>for each item of data at the lower level, there is exactly one location in cache where it might be</li>
+      <li>address mapping: module number of block
+  <img src="https://i.imgur.com/mRoZJpI.png" alt="" /></li>
+    </ul>
+  </li>
+  <li>在 cache 裡要儲存 valid bit + tag + data
+    <ul>
+      <li>valid bit
+        <ul>
+          <li>紀錄 cache 內是否為有效資訊</li>
+          <li>1 = present, 0 = not present</li>
+          <li>initially 0，因為處理器剛啟動時，內容全部是無效的</li>
+        </ul>
+      </li>
+      <li>tag:
+        <ul>
+          <li>紀錄原本在記憶體的位置</li>
+          <li>不需要完整紀錄，只需要紀錄前面幾個 bit (higher ordered bit) 就好</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>block size:
+    <ul>
+      <li>因為有 spatial locality，所以希望一次可以搬好幾個 word 進來，也就是希望 block size 要大一點</li>
+      <li>可是在 cache 的大小固定時，block size 變大，block number 會減少，更多資料會 map 到同一個位置，miss rate 會增加</li>
+      <li>block size 變大時，miss penalty 會增加</li>
+    </ul>
+  </li>
+  <li>在剛好都要 access 餘數相同的 block 時，會一直 cache miss，可是有可能其他空間都是空的，會浪費且沒有效率，所以就思考有沒有其他更有效率使用空間的方式</li>
+</ul>
+
+<h4 id="associative-caches">Associative Caches</h4>
+<ul>
+  <li>fully associative
+    <ul>
+      <li>direct-mapped 是每一筆資料只能放在一個特定的位置，令一個極端就是每一筆資料可以放在任意位置，就是 fully associative，可是尋找資料的時候需要同時一次找所有的位置，太耗資源了</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="cache-missses">Cache Missses</h4>
+<ul>
+  <li>cache hit, CPU proceeds normally</li>
+  <li>cache miss
+    <ul>
+      <li>stall the CPU pipeline</li>
+      <li>fetch block from next level hierarchy</li>
+      <li>instruction cache miss: restart instruction fetch</li>
+      <li>data cache miss: complete data access</li>
+    </ul>
+  </li>
+  <li>write hit
+    <ul>
+      <li>write through: also update the cache
+        <ul>
+          <li>avoid waiting for memory in write through: use a write buffer
+            <ul>
+              <li>write buffer:
+                <ul>
+                  <li>holding data waiting to be written to memory, CPU continues immediately (only stall on write if write buffer is already full)</li>
+                  <li>FIFO</li>
+                  <li>typical number of entries: 4</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>write back: on data-write hit, just update the block in cache
+        <ul>
+          <li>keep track of whether each block is dirty</li>
+          <li>when a dirty block is replaced
+            <ul>
+              <li>write it back to the memory</li>
+              <li>can use a write buffer to allow replacing block to be read first</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>write miss
+    <ul>
+      <li>write through: 直接去寫 memory（don’t fetch the block）</li>
+      <li>write back: fetch the block</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="cache-performance">Cache Performance</h4>
+<ul>
+  <li>
+    <p>with simplifying asssumptions:
+$Memory\ stall\ cycles \ = \frac{Memory\ accesses}{Program} \times Miss\ rate \times Miss\ penalty \ = \frac {Insructions}{Program} \times \frac{Misses}{Instruction} \times Miss\ penalty$</p>
+  </li>
+  <li>
+    <p>$Average\ Memory\ Access\ Time\ (AMAT) = hit\ time + miss\ rate \times miss\ penalty$</p>
+  </li>
+  <li>
+    <p>Actual CPI = base CPI + Miss CPI</p>
+  </li>
+</ul>
+
+<h3 id="main-memory">Main Memory</h3>
+<h4 id="memory-design-to-support-cache">Memory Design to Support Cache</h4>
+<p><img src="https://i.imgur.com/1rJkIOl.png" alt="" /></p>
+<ul>
+  <li>Use interleaved memory orginization
+    <ul>
+      <li>速度比 one-word-wide memory organization 快，硬體比 wide memory orginization 少</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="access-of-dram">Access of DRAM</h4>
+<ul>
+  <li>將記憶體位置分為前半部和後半部，先讀前半部得到一個 row，再從後半部取得 column</li>
+</ul>
+</div>
+				<footer><meta itemprop="dateModified" content="2018-05-09T00:00:00+08:00"><div class="article-license"><!--div class="m-license"><div class="clearfix"><a class="octocat" href="https://github.com/hclab_page/chadcoco1444.github.io/tree/master/_posts/2018-05-09-Computer-Organization-Structure.md">
+        <img alt="View on Github" src="/assets/images/octocat.jpg" />
+      </a><p><a href="https://github.com/hclab_page/chadcoco1444.github.io/tree/master/_posts/2018-05-09-Computer-Organization-Structure.md">View this POST on Github.</a></p><p>This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> license.</p><a class="license" rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">
+      <img alt="Creative Commons License" src="/assets/images/license-cc4.png" />
+    </a><p></p>
+  </div>
+</div-->
+</div>
+				</footer>
+			</article>
+			<div class="article-previous-next clearfix"><div class="article-previous"><span>PREVIOUS</span><a href="/2018/05/09/HCLab-page.html">HCLab page</a></div></div></div>
+	</div>
+</div></div>
+      </div>
+    </div><div class="m-page-footer js-page-footer">
+  <div class="main">
+    <aside><div class="follow-me">
+  <ul itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="chadcoco1444"><link itemprop="url" href="http://localhost:4000/"><li title="Follow me on Github.">
+        <a class="floating-action-round-button github" itemprop="sameAs" href="https://github.com/chadcoco1444" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul><p class="email">
+      <a title="Send me Email." href="mailto:chadcoco1444@gmail.com" target="_self">chadcoco1444@gmail.com</a>
+    </p></div>
+</aside>
+    <footer class="site-info">
+      <p>© High Performance Computing Laboratory 2018</p>
+      <p>Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a succinct theme for blogging." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.</p>
+    </footer>
+  </div>
+</div>
+<script>(function () {
+  var $body = document.body;
+  function classnames(classes) {
+    var i, cur, _classes = '';
+    if (window.isString(classes)) {
+      _classes =  classes;
+    } else if (window.isArray(classes)) {
+      for (i = 0; i < classes.length; i++) {
+        cur = classes[i];
+        if (window.isString(cur)) {
+          _classes = _classes.concat(_classes ? ' ' + cur : cur);
+        }
+      }
+    } else {
+      return '';
+    }
+    return _classes;
+  }
+  function addClass(dom, classname) {
+    dom.setAttribute('class', classnames([dom.getAttribute('class'), classname]));
+  }
+  if (window.hasEvent('touchstart')) {
+    addClass($body, 'is-touch');
+    document.addEventListener('touchstart', function(){}, false);
+  } else {
+    addClass($body, 'not-touch');
+  }
+})();</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      sources: {
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn1.lncld.net/static/js/3.4.1/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.1/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/7.1.2/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3'
+        }
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  function scrollAnimateTo(destination, duration, callback) {
+    var $body = $('html, body'), bodyScrollTop = $body.scrollTop();
+    if(bodyScrollTop === destination) { return; }
+    $body.animate({ scrollTop: destination }, duration, callback);
+  }
+  window.scrollTopAnchor = function(anchor, callback) {
+    scrollAnimateTo($(anchor).offset().top, 400, function() {
+      window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+      callback && callback();
+    });
+  };
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $articleContent = $('.m-post, .m-page').find('.m-article-content'), $this;
+    $articleContent.children('.highlight').each(function() {
+      $this = $(this);
+      $this.attr('data-lang', $this.find('code').attr('data-lang'));
+    });
+
+    $articleContent.children('h1, h2, h3, h4, h5, h6').each(function() {
+      $this = $(this);
+      $this.append($('<a class="anchor" aria-hidden="true"></a>').html('<svg fill="#000000" width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg>'));
+    });
+    $articleContent.on('click', '.anchor', function() {
+      window.scrollTopAnchor('#' + $(this).parent().attr('id'));
+    });
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $document = $(window.document), $root;
+    var rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop, lastScrollTop;
+    var offsetBottom = 0, disabled = false, hasInit = false;
+
+    function setOptions(options) {
+      var _options = options || {};
+      _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      calc(true);
+    }
+    function initData() {
+      top();
+      var rootOffset = $root.offset();
+      rootHeight = $root.outerHeight();
+      rootTop = rootOffset.top;
+      rootLeft = rootOffset.left;
+    }
+    function calc(needInitData) {
+      needInitData && initData();
+      scrollBottom = $document.outerHeight() - offsetBottom - rootHeight;
+      rootBottomTop = scrollBottom - rootTop;
+    }
+    function top() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: 0
+      });
+    }
+    function fixed() {
+      $root.addClass('fixed').css({
+        left: rootLeft + 'px',
+        top: 0
+      });
+    }
+    function bottom() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: rootBottomTop + 'px'
+      });
+    }
+    function setState(force) {
+      force !== true && (force = false);
+      var scrollTop = $window.scrollTop();
+      if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+        (!force && lastScrollTop >= rootTop && lastScrollTop <= scrollBottom) || fixed();
+      } else if (scrollTop < rootTop) {
+        (!force && lastScrollTop < rootTop) || top();
+      } else {
+        (!force && lastScrollTop > scrollBottom) || bottom();
+      }
+      lastScrollTop = scrollTop;
+    }
+    function init() {
+      if(!hasInit) {
+        var interval, timeout;
+        calc(true); setState();
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState();
+        });
+        $window.on('resize', window.throttle(function() {
+          disabled || (calc(true), setState(true));
+        }, 100));
+        hasInit = true;
+      }
+    }
+
+    function affix(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $root, $tocUl = $('<ul></ul>'), $tocLi, $headings, $activeLast, $activeCur;
+    var selectors = 'h1,h2,h3', container = 'body', disabled = false;
+    var headingsPos, scrolling = false, rendered = false, hasInit = false;
+    function setOptions(options) {
+      var _options = options || {};
+      _options.selectors && (selectors = _options.selectors);
+      _options.container && (container = _options.container);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      $headings = $(container).find(selectors);
+      calc();
+    }
+    function calc() {
+      headingsPos = [];
+      $headings.each(function() {
+        headingsPos.push(Math.floor($(this).offset().top));
+      });
+    }
+    function setState(element, disabled) {
+      var scrollTop = $window.scrollTop(), i;
+      if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+      if (element) {
+        $activeCur = element;
+      } else {
+        for (i = 0; i < headingsPos.length; i++) {
+          if (scrollTop >= headingsPos[i]) {
+            $activeCur = $tocLi.eq(i);
+          } else {
+            $activeCur || ($activeCur = $tocLi.eq(i));
+            break;
+          }
+        }
+      }
+      $activeLast && $activeLast.removeClass('toc-active');
+      ($activeLast = $activeCur).addClass('toc-active');
+    }
+    function render() {
+      if(!rendered) {
+        $root.append($tocUl);
+        $headings.each(function() {
+          var $this = $(this);
+          $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+            .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+        });
+        $tocLi = $tocUl.children('li');
+        $tocUl.on('click', 'a', function(e) {
+          e.preventDefault();
+          var $this = $(this);
+          scrolling = true;
+          setState($this.parent());
+          window.scrollTopAnchor($this.attr('href'), function() {
+            scrolling = false;
+          });
+        });
+      }
+      rendered = true;
+    }
+    function init() {
+      var interval, timeout;
+      if(!hasInit) {
+        render(); calc(); setState(null, scrolling);
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState(null, scrolling);
+        });
+        $window.on('resize', window.throttle(function() {
+          if (!disabled) {
+            render(); calc(); setState(null, scrolling);
+          }
+        }, 100));
+      }
+      hasInit = true;
+    }
+    function toc(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    toc.setOptions = setOptions;
+    $.fn.toc = toc;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $pageStage = $('.js-page-stage');
+    var $pageFooter = $('.js-page-footer');
+    var $articleContent = $('.js-article-content');
+    var $articleAside = $('.js-article-aside');
+    var $toc = $('.js-toc');
+    var $col2 = $('.js-col-2');
+    var toc, affix;
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+    var tocDisabled = false;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    if (hasToc) {
+      !$pageStage.hasClass('has-toc') && $pageStage.addClass('has-toc');
+    }
+    tocDisabled = disabled();
+
+    setTimeout(function() {
+      toc = $toc.toc({
+        selectors: TOC_SELECTOR,
+        container: $articleContent,
+        disabled: tocDisabled
+      });
+      affix = $articleAside.affix({
+        offsetBottom: $pageFooter.outerHeight(),
+        disabled: tocDisabled
+      });
+    }, 1000);
+  });
+})();</script></body>
+</html>
