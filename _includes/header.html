@@ -23,12 +23,12 @@
         {%- include snippets/locale-to-string.html -%}
         <li><a href="{{ href }}">{{ __return }}</a></li>
         {%- for list in site.nav_lists -%}
-          {%- assign __path = list.url -%}
-          {%- include snippets/get-nav-url.html -%}
-          {%- assign href = __return -%}
-          {%- assign __locale = list.titles -%}
-          {%- include snippets/locale-to-string.html -%}
-          <li><a href="{{ href }}">{%- if list.title -%}{{ list.title }}{%- else -%}{{ __return }}{%- endif -%}</a></li>
+        {%- assign __path = list.url -%}
+        {%- include snippets/get-nav-url.html -%}
+        {%- assign href = __return -%}
+        {%- assign __locale = list.titles -%}
+        {%- include snippets/locale-to-string.html -%}
+        <li><a href="{{ href }}">{%- if list.title -%}{{ list.title }}{%- else -%}{{ __return }}{%- endif -%}</a></li>
         {%- endfor -%}
         {%- assign __path = site.paths.rss | default: site.data.variables.default.paths.rss -%}
         {%- include snippets/get-nav-url.html -%}

@@ -65,6 +65,12 @@ nav_lists:
       zh-Hans: 关于
       zh-Hant: Member
     url: /about.html
+  - titles:
+      en: Professor
+      zh: Professor
+      zh-Hans: Professor
+      zh-Hant: Professor
+    url: /pro.html
 
 
 ## => Post
